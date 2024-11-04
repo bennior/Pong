@@ -9,124 +9,97 @@
 #define FPS 30
 #define UPS 30
 
-enum LAST_PRESSED_KEY {
-    UP,
-    DOWN,
-    DEFAULT
-};
 
-int add(int a, int b) {
+
+float abs(float a) {
+    return a * (a>0) - a * (a<0);
+}
+
+int sum(int a, int b) {
     return a + b;
 }
 
-int substract(int a, int b) {
-    return a - b;
+int get_direction(int velocity) {
+    return velocity / abs(velocity);
 }
 
-struct str_keybinds
+
+struct KeyBinds
 {
     private:
         int up_keybind, down_keybind;
     
     public:
-        str_keybinds(int _up_keybind, int _down_keybind) : up_keybind(_up_keybind), down_keybind(_down_keybind) {}
-        bool is_up() {return sf::Keyboard::isKeyPressed((sf::Keyboard::Key) up_keybind);}
-        bool is_down() {return sf::Keyboard::isKeyPressed((sf::Keyboard::Key) down_keybind);}
+        KeyBinds(int _up_keybind, int _down_keybind) : up_keybind(_up_keybind), down_keybind(_down_keybind) {}
+        bool up() {return sf::Keyboard::isKeyPressed((sf::Keyboard::Key) up_keybind);}
+        bool down() {return sf::Keyboard::isKeyPressed((sf::Keyboard::Key) down_keybind);}
 };
 
-class acceleration {
-    int x = 0;
-
-    public:
-        int current_acceleration(float k, float c) {
-            int out = (int) (k * x * x + c); x = x < (int) (-sqrt(-4*k*c) / (k*2)) ? add(x, 1) : x;
-            return out;
-        }
-
-        int current_deacceleration(float k, float c) {
-            int out = (int) (k * x * x + c); x = x > 0 ? substract(x, 1) : x;
-            return out;
-        }
-
+class Ball
+{
+private:
+    /* data */
+public:
+    Ball(/* args */);
 };
 
-// struct  str_acceleration_manager
-// {
-//     private:
-//         str_keybinds key_binds;
-//         acceleration accelerate;
-//         LAST_PRESSED_KEY LAST_KEY = DEFAULT;
-
-//     public:
-//         str_acceleration_manager(str_keybinds& _key_binds, acceleration& _acceleration) : key_binds(_key_binds), accelerate(_acceleration) {} 
-//         void set_last_key() {
-//             if(key_binds.is_up()) LAST_KEY = UP;
-//             if(key_binds.is_down()) LAST_KEY = DOWN;
-//         }
-        
-//         void mange_deacceleration(int& up_speed, int& down_speed) {
-//             switch(LAST_KEY) {
-//                 case UP: down_speed = 0; up_speed = up_speed >= 8 ? substract(up_speed , accelerate.current_deacceleration(-0.5f, 8.0f)) : up_speed; if(!up_speed) LAST_KEY = DEFAULT; 
-//                     break;
-//                 case DOWN: up_speed = 0; up_speed = down_speed >= 8 ? substract(down_speed , accelerate.current_deacceleration(-0.5f, 8.0f)) : down_speed; if(!down_speed) LAST_KEY = DEFAULT;
-//                     break;
-//                 case DEFAULT: 
-//                     break;
-//             }
-//         }
-// };
-
-
-class Player {
+class Bat {
     private:
-        int x = 0, y = 500, up_speed = 0, down_speed = 0;
+        int x = 0, y = 300;
+        int dAcc = 3, velocity = 0;
         sf::RenderWindow& m_window;
-        str_keybinds binds;
+        KeyBinds m_binds;
         sf::RectangleShape m_rect;
-        acceleration accelerate_up, accelerate_down;
-        LAST_PRESSED_KEY LAST_KEY = DEFAULT;
 
     public:
-        Player(sf::RenderWindow& _window, str_keybinds& _binds, int _x) : m_window(_window), binds(_binds), m_rect(sf::Vector2f(SIZE, SIZE * 4))  {
+        Bat(sf::RenderWindow& _window, KeyBinds& _binds, int _x) : m_window(_window), m_binds(_binds)  {
             x = _x;
-            m_rect.setPosition(x, 500);
+            m_rect = sf::RectangleShape(sf::Vector2f(SIZE, SIZE * 6));
+            m_rect.setPosition(x, y);
             m_rect.setFillColor(sf::Color::White);
         }   
 
         void render() {
-            m_rect.setPosition(x, y);
             m_window.draw(m_rect);
         }
 
         void update() {
-            if(binds.is_up()) {
-                up_speed += accelerate_up.current_acceleration(-0.5f, 8.0f);
-                y -= up_speed;
-                LAST_KEY = UP;
-                std::cout << up_speed << std::endl;
-                return;
+            //**set acceleration to 0
+            int acceleration = 0.f;
+
+            //**check for keyboard inputs
+            if(m_binds.up()) {
+                acceleration -= dAcc;    
             }
 
-            // up_speed -= accelerate_up.current_deacceleration(-0.5f, 8.0f);
-            // up_speed = up_speed >= 8 ? substract(up_speed , accelerate_up.current_deacceleration(-0.5f, 8.0f)) : up_speed;
-            // y -= up_speed;
-
-            // std::cout << accelerate_up.x << std::endl;
-             
-            if(binds.is_down()) {
-                down_speed += accelerate_down.current_acceleration(-0.5f, 8.0f);
-                y += down_speed;
-                LAST_KEY = DOWN;
-                return;
+            if(m_binds.down()) {
+                acceleration += dAcc;
             }
 
-            LAST_KEY = up_speed == 0 && down_speed == 0 ? DEFAULT : LAST_KEY;
-            up_speed = LAST_KEY == UP ? substract(up_speed, accelerate_up.current_deacceleration(-0.5f, 8.0f)) : 0;
-            down_speed = LAST_KEY == DOWN ? substract(down_speed, accelerate_down.current_deacceleration(-0.5f, 8.0f)) : 0;
-        
-            y += (down_speed - up_speed);
-            std::cout << up_speed << std::endl;
+            //**increase velocity
+            velocity += acceleration;
 
+            //**change y position and check for collisions with borders of screen
+            if(y + velocity >= 0 && y + velocity <= SCREEN_HEIGHT - m_rect.getGlobalBounds().height) {
+                y += velocity;
+            }else {
+                if(velocity < 0) {
+                    y = 0;
+                }else {
+                    y = SCREEN_HEIGHT - m_rect.getGlobalBounds().height;
+                }
+
+                velocity = 0;
+                
+                //**could also be used instead of if statement but is less efficient
+                // y = (1 + get_direction(velocity)) * SCREEN_HEIGHT / 2 - (1 + get_direction(velocity)) * m_rect.getGlobalBounds().height / 2;
+            }
+
+            //**decrease velocity by factor 0.94
+            velocity *= 0.94f;
+
+            //**update position of bat
+            m_rect.setPosition(x, y);
         }
 };
 
@@ -135,8 +108,9 @@ int main()
     //===================INITIALISE====================
     sf::RenderWindow m_window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Pong");
     sf::Event m_event;
-    str_keybinds player1_binds(sf::Keyboard::Up, sf::Keyboard::Down), player2_binds(sf::Keyboard::W, sf::Keyboard::S);
-    Player player1(m_window, player1_binds, 100), player2(m_window, player2_binds, 500);
+
+    KeyBinds m_player1_keybinds(sf::Keyboard::W, sf::Keyboard::S), m_player2_keybinds(sf::Keyboard::Up, sf::Keyboard::Down);
+    Bat m_player1(m_window, m_player1_keybinds, 100), m_player2(m_window, m_player2_keybinds, 500);
 
     clock_t last_time = clock();
 
@@ -150,8 +124,8 @@ int main()
         //*******************UPDATE*******************
         while (m_window.pollEvent(m_event)) {
             if(m_event.type == sf::Event::Closed) m_window.close();
-        }
         //*******************UPDATE*******************
+        }
 
         dt_update += (double) (clock() - last_time) / CLOCKS_PER_SEC;
         dt_frame += (double) (clock() - last_time) / CLOCKS_PER_SEC;
@@ -159,8 +133,8 @@ int main()
 
         //===================UPDATE====================
         if(dt_update >= time_per_update) {
-            player1.update();
-            player2.update();
+            m_player1.update();
+            m_player2.update();
 
             dt_update -= time_per_update;
         }
@@ -168,8 +142,8 @@ int main()
 
         //===================DRAW====================
         if(dt_frame >= time_per_frame) {
-            player1.render();
-            player2.render();
+            m_player1.render();
+            m_player2.render();
             m_window.display();
             m_window.clear();
 
