@@ -9,21 +9,6 @@
 #define FPS 30
 #define UPS 30
 
-
-
-float abs(float a) {
-    return a * (a>0) - a * (a<0);
-}
-
-int sum(int a, int b) {
-    return a + b;
-}
-
-int get_direction(int velocity) {
-    return velocity / abs(velocity);
-}
-
-
 struct KeyBinds
 {
     private:
@@ -35,25 +20,20 @@ struct KeyBinds
         bool down() {return sf::Keyboard::isKeyPressed((sf::Keyboard::Key) down_keybind);}
 };
 
-class Ball
-{
-private:
-    /* data */
-public:
-    Ball(/* args */);
-};
 
 class Bat {
     private:
-        int x = 0, y = 300;
+        int x, y;
         int dAcc = 3, velocity = 0;
         sf::RenderWindow& m_window;
         KeyBinds m_binds;
         sf::RectangleShape m_rect;
 
     public:
-        Bat(sf::RenderWindow& _window, KeyBinds& _binds, int _x) : m_window(_window), m_binds(_binds)  {
+        Bat(sf::RenderWindow& _window, KeyBinds _binds, int _x) : m_window(_window), m_binds(_binds)  {
             x = _x;
+            y = 300;
+
             m_rect = sf::RectangleShape(sf::Vector2f(SIZE, SIZE * 6));
             m_rect.setPosition(x, y);
             m_rect.setFillColor(sf::Color::White);
@@ -64,20 +44,15 @@ class Bat {
         }
 
         void update() {
-            //**set acceleration to 0
-            int acceleration = 0.f;
 
-            //**check for keyboard inputs
+            //**check for keyboard inputs and increase or decrease velocity
             if(m_binds.up()) {
-                acceleration -= dAcc;    
+                velocity -= dAcc;    
             }
 
             if(m_binds.down()) {
-                acceleration += dAcc;
+                velocity += dAcc;
             }
-
-            //**increase velocity
-            velocity += acceleration;
 
             //**change y position and check for collisions with borders of screen
             if(y + velocity >= 0 && y + velocity <= SCREEN_HEIGHT - m_rect.getGlobalBounds().height) {
@@ -103,14 +78,21 @@ class Bat {
         }
 };
 
+class Ball
+{
+private:
+    /* data */
+public:
+    Ball(/* args */);
+};
+
 int main()
 {
     //===================INITIALISE====================
     sf::RenderWindow m_window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Pong");
     sf::Event m_event;
 
-    KeyBinds m_player1_keybinds(sf::Keyboard::W, sf::Keyboard::S), m_player2_keybinds(sf::Keyboard::Up, sf::Keyboard::Down);
-    Bat m_player1(m_window, m_player1_keybinds, 100), m_player2(m_window, m_player2_keybinds, 500);
+    Bat m_bat1(m_window, KeyBinds(sf::Keyboard::W, sf::Keyboard::S), 100), m_bat2(m_window, KeyBinds(sf::Keyboard::Up, sf::Keyboard::Down), 500);
 
     clock_t last_time = clock();
 
@@ -133,8 +115,8 @@ int main()
 
         //===================UPDATE====================
         if(dt_update >= time_per_update) {
-            m_player1.update();
-            m_player2.update();
+            m_bat1.update();
+            m_bat2.update();
 
             dt_update -= time_per_update;
         }
@@ -142,8 +124,8 @@ int main()
 
         //===================DRAW====================
         if(dt_frame >= time_per_frame) {
-            m_player1.render();
-            m_player2.render();
+            m_bat1.render();
+            m_bat2.render();
             m_window.display();
             m_window.clear();
 
