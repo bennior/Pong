@@ -9,6 +9,8 @@
 #define FPS 30
 #define UPS 30
 
+#define LOG(x) std::cout << x << std::endl;
+
 struct KeyBinds
 {
     private:
@@ -78,12 +80,46 @@ class Bat {
         }
 };
 
+struct Bats
+{
+    public:
+        Bat& m_bat1; Bat& m_bat2;    
+        Bats(Bat& _bat1, Bat& _bat2) : m_bat1(_bat1), m_bat2(_bat2) {}
+};
+
 class Ball
 {
 private:
-    /* data */
+    sf::Vector2f m_direction;
+    sf::RenderWindow& m_window;
+    Bats m_bats;
+    sf::RectangleShape m_ball;
+
 public:
-    Ball(/* args */);
+    Ball(sf::RenderWindow& _window, Bats _bats) : m_window(_window), m_bats(_bats), m_ball(sf::Vector2f(SIZE, SIZE)) {
+        set_random_direction();
+
+        m_ball.setFillColor(sf::Color::Blue);
+        m_ball.setPosition(300, 300);
+    }
+
+    void render() {
+        m_window.draw(m_ball);
+    }
+
+    void update() {
+        m_ball.setPosition(m_ball.getPosition() + m_direction);
+    }
+
+    void set_random_direction() {
+        srand(time(0));
+
+        double random_angle = (double) rand() / RAND_MAX * M_PI * 2;
+
+        m_direction.x = 10 * cos(random_angle);
+        m_direction.y = 10 * sin(random_angle);
+    }
+
 };
 
 int main()
@@ -93,6 +129,7 @@ int main()
     sf::Event m_event;
 
     Bat m_bat1(m_window, KeyBinds(sf::Keyboard::W, sf::Keyboard::S), 100), m_bat2(m_window, KeyBinds(sf::Keyboard::Up, sf::Keyboard::Down), 500);
+    Ball m_ball(m_window, Bats(m_bat1, m_bat2));
 
     clock_t last_time = clock();
 
@@ -117,7 +154,8 @@ int main()
         if(dt_update >= time_per_update) {
             m_bat1.update();
             m_bat2.update();
-
+            m_ball.update();
+            
             dt_update -= time_per_update;
         }
         //===================UPDATE====================
@@ -126,6 +164,8 @@ int main()
         if(dt_frame >= time_per_frame) {
             m_bat1.render();
             m_bat2.render();
+            m_ball.render();
+
             m_window.display();
             m_window.clear();
 
