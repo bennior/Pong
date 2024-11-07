@@ -3,8 +3,8 @@
 #include <cmath>
 #include <iostream>
 
-#define SIZE 6
-#define SCREEN_WIDTH 600
+#define SIZE 10
+#define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define FPS 30
 #define UPS 30
@@ -24,19 +24,22 @@ struct KeyBinds
 
 
 class Bat {
+        
     private:
-        int x, y;
+        int x, y, width = SIZE, height = SIZE * 15;
         int dAcc = 3, velocity = 0;
+
         sf::RenderWindow& m_window;
         KeyBinds m_binds;
-        sf::RectangleShape m_rect;
 
     public:
+        sf::RectangleShape m_rect;
+
         Bat(sf::RenderWindow& _window, KeyBinds _binds, int _x) : m_window(_window), m_binds(_binds)  {
             x = _x;
-            y = 300;
+            y = (SCREEN_HEIGHT - height) / 2;
 
-            m_rect = sf::RectangleShape(sf::Vector2f(SIZE, SIZE * 6));
+            m_rect = sf::RectangleShape(sf::Vector2f(width, height));
             m_rect.setPosition(x, y);
             m_rect.setFillColor(sf::Color::White);
         }   
@@ -83,13 +86,15 @@ class Bat {
 struct Bats
 {
     public:
-        Bat& m_bat1; Bat& m_bat2;    
-        Bats(Bat& _bat1, Bat& _bat2) : m_bat1(_bat1), m_bat2(_bat2) {}
+        sf::FloatRect m_bat_1, m_bat_2;    
+        Bats(Bat& _bat1, Bat& _bat2) : m_bat_1(_bat1.m_rect.getGlobalBounds()), m_bat_2(_bat2.m_rect.getGlobalBounds()) {}
 };
 
 class Ball
 {
 private:
+    double random_angle;
+    
     sf::Vector2f m_direction;
     sf::RenderWindow& m_window;
     Bats m_bats;
@@ -99,8 +104,8 @@ public:
     Ball(sf::RenderWindow& _window, Bats _bats) : m_window(_window), m_bats(_bats), m_ball(sf::Vector2f(SIZE, SIZE)) {
         set_random_direction();
 
-        m_ball.setFillColor(sf::Color::Blue);
-        m_ball.setPosition(300, 300);
+        m_ball.setFillColor(sf::Color::White);
+        m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
     }
 
     void render() {
@@ -109,17 +114,32 @@ public:
 
     void update() {
         m_ball.setPosition(m_ball.getPosition() + m_direction);
+
+        if(m_ball.getGlobalBounds().top <= 0) {
+            m_direction.y *= -1;
+        }
+
+        if(m_ball.getGlobalBounds().top + SIZE >= SCREEN_HEIGHT) {
+            m_direction.y *= -1;
+        }
+
+        if(m_ball.getGlobalBounds().left <= m_bats.m_bat_1.left + SIZE) {
+            m_direction.x *= -1;
+        }
+
+        if(m_ball.getGlobalBounds().left + SIZE >= m_bats.m_bat_2.left) {
+            m_direction.x *= -1;
+        }
     }
 
     void set_random_direction() {
         srand(time(0));
 
-        double random_angle = (double) rand() / RAND_MAX * M_PI * 2;
+        random_angle = (double) rand() / RAND_MAX * M_PI * 2;
 
         m_direction.x = 10 * cos(random_angle);
         m_direction.y = 10 * sin(random_angle);
     }
-
 };
 
 int main()
@@ -128,8 +148,8 @@ int main()
     sf::RenderWindow m_window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Pong");
     sf::Event m_event;
 
-    Bat m_bat1(m_window, KeyBinds(sf::Keyboard::W, sf::Keyboard::S), 100), m_bat2(m_window, KeyBinds(sf::Keyboard::Up, sf::Keyboard::Down), 500);
-    Ball m_ball(m_window, Bats(m_bat1, m_bat2));
+    Bat m_bat_1(m_window, KeyBinds(sf::Keyboard::W, sf::Keyboard::S), SCREEN_WIDTH / 6), m_bat_2(m_window, KeyBinds(sf::Keyboard::Up, sf::Keyboard::Down), SCREEN_WIDTH * 5 / 6);
+    Ball m_ball(m_window, Bats(m_bat_1, m_bat_2));
 
     clock_t last_time = clock();
 
@@ -152,8 +172,8 @@ int main()
 
         //===================UPDATE====================
         if(dt_update >= time_per_update) {
-            m_bat1.update();
-            m_bat2.update();
+            m_bat_1.update();
+            m_bat_2.update();
             m_ball.update();
             
             dt_update -= time_per_update;
@@ -162,8 +182,8 @@ int main()
 
         //===================DRAW====================
         if(dt_frame >= time_per_frame) {
-            m_bat1.render();
-            m_bat2.render();
+            m_bat_1.render();
+            m_bat_2.render();
             m_ball.render();
 
             m_window.display();
