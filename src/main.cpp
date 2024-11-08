@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-#define SIZE 10
+#define SIZE 20
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define FPS 30
@@ -26,7 +26,7 @@ struct KeyBinds
 class Bat {
         
     private:
-        int x, y, width = SIZE, height = SIZE * 15;
+        int x, y;
         int dAcc = 3, velocity = 0;
 
         sf::RenderWindow& m_window;
@@ -37,9 +37,9 @@ class Bat {
 
         Bat(sf::RenderWindow& _window, KeyBinds _binds, int _x) : m_window(_window), m_binds(_binds)  {
             x = _x;
-            y = (SCREEN_HEIGHT - height) / 2;
+            y = (SCREEN_HEIGHT - 4 * SIZE) / 2;
 
-            m_rect = sf::RectangleShape(sf::Vector2f(width, height));
+            m_rect = sf::RectangleShape(sf::Vector2f(SIZE, 4 * SIZE));
             m_rect.setPosition(x, y);
             m_rect.setFillColor(sf::Color::White);
         }   
@@ -86,60 +86,77 @@ class Bat {
 struct Bats
 {
     public:
-        sf::FloatRect m_bat_1, m_bat_2;    
-        Bats(Bat& _bat1, Bat& _bat2) : m_bat_1(_bat1.m_rect.getGlobalBounds()), m_bat_2(_bat2.m_rect.getGlobalBounds()) {}
+        sf::RectangleShape& m_bat_1;
+        sf::RectangleShape& m_bat_2;    
+        Bats(Bat& _bat1, Bat& _bat2) : m_bat_1(_bat1.m_rect), m_bat_2(_bat2.m_rect) {}
 };
 
-class Ball
+class Ball 
 {
-private:
-    double random_angle;
+    private:
+        double random_angle;
+        
+        sf::Vector2f m_direction;
+        sf::RenderWindow& m_window;
+        Bats m_bats;
+        sf::RectangleShape m_ball;
+
+    public:
+        Ball(sf::RenderWindow& _window, Bats _bats) : m_window(_window), m_bats(_bats), m_ball(sf::Vector2f(SIZE, SIZE)) {
+            set_random_direction();
+
+            m_ball.setFillColor(sf::Color::White);
+            m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
+        }
+
+        void render() {
+            m_window.draw(m_ball);
+        }
+
+        void update() {
+            //**move ball            
+            m_ball.setPosition(m_ball.getPosition() + m_direction);
+
+            //**reflect ball 
+            reflect_ball();
+
+            //**check ball's collision
+            check_collision();
+        }
+
+        void check_collision() {
+            //**check for collison with bat
+            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_1.getGlobalBounds()))
+                m_direction.x *= -1;
+
+            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_2.getGlobalBounds()))
+                m_direction.x *= -1;
+
+            //**check for player points
+            if(sf::FloatRect(0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT).contains(m_ball.getPosition()))
+                m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
+
+            if(sf::FloatRect(SCREEN_WIDTH * 7 / 8, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT).contains(m_ball.getPosition()))
+                m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
     
-    sf::Vector2f m_direction;
-    sf::RenderWindow& m_window;
-    Bats m_bats;
-    sf::RectangleShape m_ball;
-
-public:
-    Ball(sf::RenderWindow& _window, Bats _bats) : m_window(_window), m_bats(_bats), m_ball(sf::Vector2f(SIZE, SIZE)) {
-        set_random_direction();
-
-        m_ball.setFillColor(sf::Color::White);
-        m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
-    }
-
-    void render() {
-        m_window.draw(m_ball);
-    }
-
-    void update() {
-        m_ball.setPosition(m_ball.getPosition() + m_direction);
-
-        if(m_ball.getGlobalBounds().top <= 0) {
-            m_direction.y *= -1;
+        }
+        
+        void reflect_ball() {
+            if(m_ball.getGlobalBounds().top <= 0)
+                m_direction.y *= -1;
+            
+            if(m_ball.getGlobalBounds().top + SIZE >= SCREEN_HEIGHT)
+                m_direction.y *= -1;
         }
 
-        if(m_ball.getGlobalBounds().top + SIZE >= SCREEN_HEIGHT) {
-            m_direction.y *= -1;
+        void set_random_direction() {
+            srand(time(0));
+
+            random_angle = (double) rand() / RAND_MAX * M_PI * 2;
+
+            m_direction.x = 10 * cos(random_angle);
+            m_direction.y = 10 * sin(random_angle);
         }
-
-        if(m_ball.getGlobalBounds().left <= m_bats.m_bat_1.left + SIZE) {
-            m_direction.x *= -1;
-        }
-
-        if(m_ball.getGlobalBounds().left + SIZE >= m_bats.m_bat_2.left) {
-            m_direction.x *= -1;
-        }
-    }
-
-    void set_random_direction() {
-        srand(time(0));
-
-        random_angle = (double) rand() / RAND_MAX * M_PI * 2;
-
-        m_direction.x = 10 * cos(random_angle);
-        m_direction.y = 10 * sin(random_angle);
-    }
 };
 
 int main()
