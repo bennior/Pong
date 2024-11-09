@@ -3,7 +3,7 @@
 #include <cmath>
 #include <iostream>
 
-#define SIZE 20
+#define SIZE 10
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
 #define FPS 30
@@ -27,7 +27,7 @@ class Bat {
         
     private:
         int x, y;
-        int dAcc = 3, velocity = 0;
+        int dAcc = 3, velocity = 0, size_num = 5;
 
         sf::RenderWindow& m_window;
         KeyBinds m_binds;
@@ -37,9 +37,9 @@ class Bat {
 
         Bat(sf::RenderWindow& _window, KeyBinds _binds, int _x) : m_window(_window), m_binds(_binds)  {
             x = _x;
-            y = (SCREEN_HEIGHT - 4 * SIZE) / 2;
+            y = (SCREEN_HEIGHT - size_num * SIZE) / 2;
 
-            m_rect = sf::RectangleShape(sf::Vector2f(SIZE, 4 * SIZE));
+            m_rect = sf::RectangleShape(sf::Vector2f(4, size_num * SIZE));
             m_rect.setPosition(x, y);
             m_rect.setFillColor(sf::Color::White);
         }   
@@ -94,7 +94,8 @@ struct Bats
 class Ball 
 {
     private:
-        double random_angle;
+        int last_hit = clock(), hit_limit = 2 * 1000000 / UPS;
+        float random_angle, velocity = 1.f;
         
         sf::Vector2f m_direction;
         sf::RenderWindow& m_window;
@@ -117,31 +118,40 @@ class Ball
             //**move ball            
             m_ball.setPosition(m_ball.getPosition() + m_direction);
 
-            //**reflect ball 
-            reflect_ball();
+            //**rebound ball 
+            rebound_ball();
 
             //**check ball's collision
-            check_collision();
+            if(clock() - last_hit > hit_limit) check_hits();
+            check_misses();
         }
 
-        void check_collision() {
-            //**check for collison with bat
-            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_1.getGlobalBounds()))
+        void check_hits() {
+            //**check for player hits
+            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_1.getGlobalBounds())) {
                 m_direction.x *= -1;
+                last_hit = clock();
+                // m_direction.x *= 1.05f;
+            }
 
-            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_2.getGlobalBounds()))
+            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_2.getGlobalBounds())) {
                 m_direction.x *= -1;
+                last_hit = clock();
+                // m_direction.x *= 1.05f;
+            }
+        }
 
+        void check_misses() {
             //**check for player points
-            if(sf::FloatRect(0, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT).contains(m_ball.getPosition()))
+            if(sf::FloatRect(0, 0, SCREEN_WIDTH / 9, SCREEN_HEIGHT).contains(m_ball.getPosition()))
                 m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
 
-            if(sf::FloatRect(SCREEN_WIDTH * 7 / 8, 0, SCREEN_WIDTH / 8, SCREEN_HEIGHT).contains(m_ball.getPosition()))
+            if(sf::FloatRect(SCREEN_WIDTH * 9 / 10, 0, SCREEN_WIDTH / 10, SCREEN_HEIGHT).contains(m_ball.getPosition()))
                 m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
     
         }
         
-        void reflect_ball() {
+        void rebound_ball() {
             if(m_ball.getGlobalBounds().top <= 0)
                 m_direction.y *= -1;
             
@@ -150,9 +160,9 @@ class Ball
         }
 
         void set_random_direction() {
-            srand(time(0));
+            srand(clock());
 
-            random_angle = (double) rand() / RAND_MAX * M_PI * 2;
+            random_angle = (float) (rand() % 4 * 2 + 1) / 4 * M_PI; 
 
             m_direction.x = 10 * cos(random_angle);
             m_direction.y = 10 * sin(random_angle);
