@@ -4,7 +4,7 @@
 #include <iostream>
 
 #define SIZE 10
-#define SCREEN_WIDTH 800
+#define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 600
 #define FPS 30
 #define UPS 30
@@ -39,7 +39,7 @@ class Bat {
             x = _x;
             y = (SCREEN_HEIGHT - size_num * SIZE) / 2;
 
-            m_rect = sf::RectangleShape(sf::Vector2f(4, size_num * SIZE));
+            m_rect = sf::RectangleShape(sf::Vector2f(SIZE, size_num * SIZE));
             m_rect.setPosition(x, y);
             m_rect.setFillColor(sf::Color::White);
         }   
@@ -81,20 +81,24 @@ class Bat {
             //**update position of bat
             m_rect.setPosition(x, y);
         }
+
+        int get_velocity() {
+            return velocity;
+        }
 };
 
 struct Bats
 {
     public:
-        sf::RectangleShape& m_bat_1;
-        sf::RectangleShape& m_bat_2;    
-        Bats(Bat& _bat1, Bat& _bat2) : m_bat_1(_bat1.m_rect), m_bat_2(_bat2.m_rect) {}
+        Bat& m_bat_1; Bat& m_bat_2;
+        sf::RectangleShape& m_rect_1; sf::RectangleShape& m_rect_2;    
+        Bats(Bat& _bat1, Bat& _bat2) : m_bat_1(_bat1), m_bat_2(_bat2), m_rect_1(_bat1.m_rect), m_rect_2(_bat2.m_rect) {}
 };
 
 class Ball 
 {
     private:
-        int last_hit = clock(), hit_limit = 2 * 1000000 / UPS;
+        int last_hit = clock(), hit_limit = 5 * 1000000 / UPS;
         float random_angle, velocity = 1.f;
         
         sf::Vector2f m_direction;
@@ -128,16 +132,14 @@ class Ball
 
         void check_hits() {
             //**check for player hits
-            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_1.getGlobalBounds())) {
-                m_direction.x *= -1;
+            if(m_ball.getGlobalBounds().intersects(m_bats.m_rect_1.getGlobalBounds())) {
+                m_direction.x *= -1.02f;
                 last_hit = clock();
-                // m_direction.x *= 1.05f;
             }
 
-            if(m_ball.getGlobalBounds().intersects(m_bats.m_bat_2.getGlobalBounds())) {
-                m_direction.x *= -1;
+            if(m_ball.getGlobalBounds().intersects(m_bats.m_rect_2.getGlobalBounds())) {
+                m_direction.x *= -1.02f;
                 last_hit = clock();
-                // m_direction.x *= 1.05f;
             }
         }
 
@@ -172,17 +174,43 @@ class Ball
 int main()
 {
     //===================INITIALISE====================
+    sf::Font m_font;
+    m_font.loadFromFile("src/prstartk.ttf");
+
+    sf::Text m_player_name_1, m_player_name_2, m_score_1, m_score_2;
+
+    m_player_name_1.setFont(m_font);
+    m_player_name_2.setFont(m_font);
+    m_score_1.setFont(m_font);
+    m_score_2.setFont(m_font);
+
+    m_player_name_1.setPosition(0, 0);
+    m_player_name_2.setPosition(950, 0);
+
+    m_player_name_1.setCharacterSize(15);
+    m_player_name_2.setCharacterSize(15);
+
+        //===================INPUT====================
+        std::string name;
+        std::cout << "ENTER FIRST PLAYER'S NAME: ";
+        std::cin >> name;
+        m_player_name_1.setString(name);
+        std::cout << "ENTER SECOND PLAYER'S NAME: ";
+        std::cin >> name;
+        m_player_name_2.setString(name);
+        //===================INPUT====================
+
     sf::RenderWindow m_window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Pong");
     sf::Event m_event;
 
-    Bat m_bat_1(m_window, KeyBinds(sf::Keyboard::W, sf::Keyboard::S), SCREEN_WIDTH / 6), m_bat_2(m_window, KeyBinds(sf::Keyboard::Up, sf::Keyboard::Down), SCREEN_WIDTH * 5 / 6);
+    Bat m_bat_1(m_window, KeyBinds(sf::Keyboard::W, sf::Keyboard::S), SCREEN_WIDTH / 4), m_bat_2(m_window, KeyBinds(sf::Keyboard::Up, sf::Keyboard::Down), SCREEN_WIDTH * 3 / 4);
     Ball m_ball(m_window, Bats(m_bat_1, m_bat_2));
+
 
     clock_t last_time = clock();
 
     const double time_per_frame = 1.0 / UPS, time_per_update = 1.0 / FPS;
     double dt_update = 0, dt_frame = 0;
-
     //===================INITIALISE====================
 
 
@@ -209,6 +237,9 @@ int main()
 
         //===================DRAW====================
         if(dt_frame >= time_per_frame) {
+            m_window.draw(m_player_name_1);
+            m_window.draw(m_player_name_2);
+
             m_bat_1.render();
             m_bat_2.render();
             m_ball.render();
