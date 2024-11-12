@@ -105,17 +105,21 @@ class Ball
         sf::RenderWindow& m_window;
         Bats m_bats;
         sf::RectangleShape m_ball;
+        sf::RectangleShape m_hitbox;
 
     public:
-        Ball(sf::RenderWindow& _window, Bats _bats) : m_window(_window), m_bats(_bats), m_ball(sf::Vector2f(SIZE, SIZE)) {
+        Ball(sf::RenderWindow& _window, Bats _bats) : m_window(_window), m_bats(_bats), m_ball(sf::Vector2f(SIZE, SIZE)), m_hitbox(sf::Vector2f(SIZE, SIZE)) {
             set_random_direction();
 
             m_ball.setFillColor(sf::Color::White);
             m_ball.setPosition((SCREEN_WIDTH - SIZE) / 2, (SCREEN_HEIGHT - SIZE) / 2);
+
+            m_hitbox.setFillColor(sf::Color::Red);
         }
 
         void render() {
             m_window.draw(m_ball);
+            m_window.draw(m_hitbox);
         }
 
         void update() {
@@ -135,11 +139,13 @@ class Ball
             if(m_ball.getGlobalBounds().intersects(m_bats.m_rect_1.getGlobalBounds())) {
                 m_direction.x *= -1.02f;
                 last_hit = clock();
+                calc_hitbox(m_bats.m_bat_2.m_rect.getPosition().x);
             }
 
             if(m_ball.getGlobalBounds().intersects(m_bats.m_rect_2.getGlobalBounds())) {
                 m_direction.x *= -1.02f;
                 last_hit = clock();
+                calc_hitbox(m_bats.m_bat_1.m_rect.getPosition().x);
             }
         }
 
@@ -154,11 +160,26 @@ class Ball
         }
         
         void rebound_ball() {
-            if(m_ball.getGlobalBounds().top <= 0)
+            if(m_ball.getGlobalBounds().top <= 0) {
+                m_ball.setPosition(m_ball.getPosition().x, -m_ball.getPosition().y);
                 m_direction.y *= -1;
+            }
             
-            if(m_ball.getGlobalBounds().top + SIZE >= SCREEN_HEIGHT)
+            if(m_ball.getGlobalBounds().top + SIZE >= SCREEN_HEIGHT) {
+                m_ball.setPosition(m_ball.getPosition().x, 2 * SCREEN_HEIGHT - (m_ball.getPosition().y + SIZE));
                 m_direction.y *= -1;
+            }
+        }
+
+        void calc_hitbox(const int& _bat_pos) {
+            float y = (_bat_pos - m_ball.getPosition().x) / m_direction.x * m_direction.y + m_ball.getPosition().y;
+
+            if(y < 0) 
+                y = -y;
+            else if (y >= SCREEN_HEIGHT)
+                y = 2 * SCREEN_HEIGHT - y - SIZE;
+
+            m_hitbox.setPosition(_bat_pos, y);
         }
 
         void set_random_direction() {
