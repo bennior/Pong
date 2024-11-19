@@ -302,8 +302,8 @@ class Ball
 
             float random_angle = (float) (rand() % 4 * 2 + 1) / 4 * M_PI; 
             
-            m_direction.y = 10 * sin(random_angle);
-            m_direction.x = 10 * cos(random_angle);
+            m_direction.y = 50 * sin(random_angle);
+            m_direction.x = 50 * cos(random_angle);
         }
 };
 
@@ -322,7 +322,7 @@ int main()
     //**texts
     sf::Text m_player_name_1, m_player_name_2, m_score_1, m_score_2, m_winner;
     sf::Text m_title("PONG", m_font, 95);
-    sf::Text m_subtitle("PRESS ANY KEY TO START!", m_font, 30);
+    sf::Text m_subtitle("PRESS SPACE TO START!", m_font, 30);
 
     //**set fonts
     m_player_name_1.setFont(m_font);
@@ -422,10 +422,12 @@ int main()
             case GAME_OVER:
                 m_bat_1.reset();
                 m_bat_2.reset();
-                m_bat_1.score = 0;
-                m_bat_2.score = 0;
 
-                if(check_if_pressed()) GAME_STATE = PLAYING;
+                if(check_if_pressed()) {
+                    GAME_STATE = PLAYING;
+                    m_bat_1.score = 0;
+                    m_bat_2.score = 0;
+                }
                 break;            
             }
             dt_update -= time_per_update;
@@ -465,6 +467,8 @@ int main()
                 }else {
                     m_winner.setString(std::string(m_player_name_2.getString()).append(" WON!"));
                 }
+                LOG(m_bat_1.score);
+
                 m_winner.setPosition((SCREEN_WIDTH - m_winner.getGlobalBounds().width) / 2, (SCREEN_HEIGHT - 2 * m_winner.getGlobalBounds().height) / 2);
 
                 m_window.draw(m_winner);
@@ -528,11 +532,7 @@ void loading_animation(sf::RenderWindow& _window) {
 }
 
 bool check_if_pressed() {
-    bool status;
-
-    for(int i = 0; i < sf::Keyboard::KeyCount; i++)
-        status = status != true ? sf::Keyboard::isKeyPressed(sf::Keyboard::Key(i)) : status;
-    return status;
+    return sf::Keyboard::isKeyPressed(sf::Keyboard::Space);
 }
 
 void cycle_through_font(sf::Text& _subtitle) {
