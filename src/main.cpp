@@ -10,8 +10,6 @@
 #define FPS 30
 #define UPS 30
 
-#define LOG(x) std::cout << x << std::endl;
-
 enum GameState {
     START_SCREEN,
     PLAYING,
@@ -467,7 +465,6 @@ int main()
                 }else {
                     m_winner.setString(std::string(m_player_name_2.getString()).append(" WON!"));
                 }
-                LOG(m_bat_1.score);
 
                 m_winner.setPosition((SCREEN_WIDTH - m_winner.getGlobalBounds().width) / 2, (SCREEN_HEIGHT - 2 * m_winner.getGlobalBounds().height) / 2);
 
