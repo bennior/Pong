@@ -302,8 +302,8 @@ class Ball
 
             float random_angle = (float) (rand() % 4 * 2 + 1) / 4 * M_PI; 
             
-            m_direction.y = 50 * sin(random_angle);
-            m_direction.x = 50 * cos(random_angle);
+            m_direction.y = 10 * sin(random_angle);
+            m_direction.x = 10 * cos(random_angle);
         }
 };
 
